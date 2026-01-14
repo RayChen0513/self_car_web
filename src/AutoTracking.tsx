@@ -78,6 +78,31 @@ const getDistance = (p1, p2) => {
   return (R * c).toFixed(0);
 };
 
+const parseNMEA = (nmeaString: string) => {
+  if (!nmeaString || !nmeaString.startsWith('$')) return null;
+  const p = nmeaString.split(',');
+
+  // 我們主要解析 $GPGGA (包含經緯度與定位狀態)
+  // 格式: $GPGGA,時間,緯度,N/S,經度,E/W,定位品質(0=未定位, 1=GPS定位, 2=DGPS)...
+  if (p[0] === '$GPGGA' && p[6] !== '0') { 
+    const convertToDecimal = (val, dir) => {
+      if (!val) return null;
+      // NMEA 格式是 DDMM.MMMM -> 轉換為十進位
+      const degrees = parseFloat(val.substring(0, val.indexOf('.') - 2));
+      const minutes = parseFloat(val.substring(val.indexOf('.') - 2));
+      let decimal = degrees + minutes / 60;
+      if (dir === 'S' || dir === 'W') decimal *= -1;
+      return decimal;
+    };
+
+    const lat = convertToDecimal(p[2], p[3]);
+    const lng = convertToDecimal(p[4], p[5]);
+    
+    return (lat && lng) ? { lat, lng } : null;
+  }
+  return null;
+};
+
 // --- 地圖行為控制 ---
 function MapController({ userPos, isLocked }) {
   const map = useMap();
@@ -97,18 +122,23 @@ function AutoTracking() {
   const [devicePos, setDevicePos] = useState({ lat: null, lng: null });
   const [isLocked, setIsLocked] = useState(true);
   const [error, setError] = useState(null);
+  const [wsStatus, setWsStatus] = useState("中斷");
+  const wsRef = useRef(null);
+  const reconnectTimeoutRef = useRef(null);
   
   const timerRef = useRef(null);
 
   const requestLocation = async () => {
     // 模擬 API 獲取裝置位置 (你原本的邏輯)
     try {
-      const res = await fetch('/api/getDevicePos');
-      const _devicePos = await res.json();
-      setDevicePos({ lat: _devicePos.lat, lng: _devicePos.lng });
+      setTimeout(async () => {
+        const res = await fetch('/api/getDevicePos');
+        const _devicePos = await res.json();
+        console.log("裝置位置:", _devicePos);
+        setDevicePos({ lat: _devicePos.lat, lng: _devicePos.lng });
+      }, 10);
       
-      // 測試用 mock 數據
-    //   setDevicePos({ lat: 25.0350, lng: 121.5650 });
+      
     } catch (e) { console.error("裝置定位失敗"); }
 
     navigator.geolocation.getCurrentPosition(
@@ -118,15 +148,79 @@ function AutoTracking() {
     );
   };
 
+
   useEffect(() => {
-    requestLocation(); // 初始執行
-    timerRef.current = setInterval(requestLocation, 3000); // 建議改為 3秒，避免過於頻繁
-    return () => clearInterval(timerRef.current);
+    const connectWS = () => {
+      // 如果已經有連線，先關閉它
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+
+      const ws = new WebSocket("wss://cautious-potato-5wx99rv4pqpcrv4-5174.app.github.dev/ws");
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        console.log("WebSocket 已連線");
+        setWsStatus("已連線");
+        // 連線成功時，清除重連的定時器
+        if (reconnectTimeoutRef.current) {
+          clearTimeout(reconnectTimeoutRef.current);
+        }
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          const nmeaStr = data.echo;
+          const coords = parseNMEA(nmeaStr);
+          
+          if (coords) {
+            setDevicePos(coords);
+          }
+        } catch (err) {
+          console.error("解析失敗:", err);
+        }
+      };
+
+      ws.onclose = () => {
+        setWsStatus("中斷");
+        console.log("WebSocket 連線中斷，5秒後嘗試重連...");
+        
+        // 避免重複設定多個 Timeout
+        if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+        
+        // 5 秒後重新執行 connectWS
+        reconnectTimeoutRef.current = setTimeout(() => {
+          connectWS();
+        }, 5000);
+      };
+
+      ws.onerror = (err) => {
+        console.error("WebSocket 錯誤", err);
+        ws.close(); // 觸發 onclose 進行重連
+      };
+    };
+
+    connectWS();
+
+    // 瀏覽器定位監聽
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (err) => console.error("手機定位錯誤:", err),
+      { enableHighAccuracy: true }
+    );
+
+    // 清理機制
+    return () => {
+      if (wsRef.current) wsRef.current.close();
+      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+      navigator.geolocation.clearWatch(watchId);
+    };
   }, []);
 
   const distance = getDistance(userPos, devicePos);
 
-  return (
+return (
     <AppContainer>
       {/* 頂部數據面板 */}
       <InfoPanel>
@@ -137,6 +231,17 @@ function AutoTracking() {
         <StatCard>
           <span>定位狀態</span>
           <strong style={{color: error ? 'red' : '#4CAF50'}}>{error ? '異常' : '良好'}</strong>
+        </StatCard>
+      </InfoPanel>
+
+      <InfoPanel>
+        <StatCard>
+          <span>WebSocket 狀態</span>
+          <strong style={{ color: wsStatus === '已連線' ? 'green' : 'red' }}>{wsStatus}</strong>
+        </StatCard>
+        <StatCard>
+          <span>裝置定位</span>
+          <strong>{devicePos.lat ? "已鎖定" : "搜尋衛星中..."}</strong>
         </StatCard>
       </InfoPanel>
 

@@ -10,6 +10,7 @@ function App() {
   return (
     <Router>
       <Routes>
+        <Route path="/" element={<MapApp></MapApp>} />
         <Route path="/map" element={<MapApp></MapApp>} />
         <Route path="/tracking" element={<AutoTracking></AutoTracking>} />
       </Routes>

@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Route, Routes, useParams, Link } from 'react-r
 import './App.css'
 import MapApp from './MapApp'
 import AutoTracking from './AutoTracking'
+import Home from './Home'
 
 function App() {
   const [count, setCount] = useState(0)
@@ -10,7 +11,7 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<MapApp></MapApp>} />
+        <Route path="/" element={<Home></Home>} />
         <Route path="/map" element={<MapApp></MapApp>} />
         <Route path="/tracking" element={<AutoTracking></AutoTracking>} />
       </Routes>

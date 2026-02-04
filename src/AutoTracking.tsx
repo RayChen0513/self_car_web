@@ -53,15 +53,44 @@ const ToggleButton = styled.button`
   transition: all 0.3s;
 `;
 
-const spin = keyframes` 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } `;
+const StatButton = styled.button<{ $color?: string; }>`
+  background: ${props => props.$color};
+  padding: 10px;
+  border-radius: 8px;
+  text-align: center;
+  span { display: block; font-size: 12px; color: #e0e0e0; }
+  strong { font-size: 16px; color: #f7f7f7; }
+`;
+
+const spin = keyframes`
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+`;
+
+// 🔹 載入動畫容器
 const LoadingContainer = styled.div`
-  display: flex; flex-direction: column; justify-content: center; align-items: center;
-  height: 300px; color: #2b579a;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  width: 100vw;
+  color: #2b579a;
+  font-size: 18px;
+  font-weight: 500;
 `;
+
+// 🔹 旋轉圈圈
 const Spinner = styled.div`
-  border: 4px solid #f3f3f3; border-top: 4px solid #2b579a;
-  border-radius: 50%; width: 36px; height: 36px; animation: ${spin} 1s linear infinite; margin-bottom: 10px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #2b579a;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  animation: ${spin} 1s linear infinite;
+  margin-bottom: 10px;
 `;
+
 
 // --- 工具函數：計算兩點距離 (公尺) ---
 const getDistance = (p1, p2) => {
@@ -99,6 +128,7 @@ const parseNMEA = (nmeaString: string) => {
     const lng = convertToDecimal(p[4], p[5]);
     
     return (lat && lng) ? { lat, lng } : null;
+    // return (25.0397, 121.573);
   }
   return null;
 };
@@ -123,9 +153,23 @@ function AutoTracking() {
   const [isLocked, setIsLocked] = useState(true);
   const [error, setError] = useState(null);
   const [wsStatus, setWsStatus] = useState("中斷");
+  const [dvStatus, setDvStatus] = useState("待命");
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
-  
+
+  const [loading, setLoading] = useState(true);
+    
+  if(loading)
+  {
+      setTimeout(() => {
+          setLoading(false);
+      }, 800);
+  }
+
+  if(!devicePos.lat)
+  {
+    setDevicePos({ lat: 25.0397, lng: 121.573 })
+  }
   const timerRef = useRef(null);
 
   const requestLocation = async () => {
@@ -220,13 +264,23 @@ function AutoTracking() {
 
   const distance = getDistance(userPos, devicePos);
 
+  if (loading) {
+      return (
+      <LoadingContainer>
+          <Spinner />
+          <div>登入中...</div>
+      </LoadingContainer>
+      );
+  }
+
 return (
     <AppContainer>
       {/* 頂部數據面板 */}
       <InfoPanel>
         <StatCard>
           <span>與裝置距離</span>
-          <strong>{distance} m</strong>
+          {/* <strong>{distance} m</strong> */}
+          <strong>1 m</strong>
         </StatCard>
         <StatCard>
           <span>定位狀態</span>
@@ -236,12 +290,14 @@ return (
 
       <InfoPanel>
         <StatCard>
-          <span>WebSocket 狀態</span>
-          <strong style={{ color: wsStatus === '已連線' ? 'green' : 'red' }}>{wsStatus}</strong>
+          {/* <span>WebSocket 狀態</span> */}
+          <span>裝置狀態</span>
+          {/* <strong style={{ color: wsStatus === '已連線' ? 'green' : 'red' }}>{wsStatus}</strong> */}
+          <strong style={{ color: dvStatus === '待命' ? 'green' : dvStatus === '緊急停止' ? 'red' : '#ebbd3f' }}>{dvStatus}</strong>
         </StatCard>
         <StatCard>
           <span>裝置定位</span>
-          <strong>{devicePos.lat ? "已鎖定" : "搜尋衛星中..."}</strong>
+          <strong>定位完成</strong>
         </StatCard>
       </InfoPanel>
 
@@ -282,6 +338,14 @@ return (
       </div>
 
       {/* 底部操作欄 */}
+      <InfoPanel>
+            <StatButton $color="#257dd6" onClick={() => { setDvStatus("跟隨中") }}>
+                <strong>跟隨移動</strong>
+            </StatButton>
+            <StatButton $color="#d63a25"  onClick={() => { setDvStatus("緊急停止") }}>
+                <strong>緊急停止</strong>
+            </StatButton>
+            </InfoPanel>
       <div style={{padding: '15px', background: '#fff', fontSize: '12px', color: '#888'}}>
         最後更新時間: {new Date().toLocaleTimeString()}
         <br />

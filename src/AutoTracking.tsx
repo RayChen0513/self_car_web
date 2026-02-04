@@ -91,6 +91,16 @@ const Spinner = styled.div`
   margin-bottom: 10px;
 `;
 
+const spin2 = keyframes` 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } `;
+const LoadingContainer2 = styled.div`
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  height: 300px; color: #2b579a;
+`;
+const Spinner2 = styled.div`
+  border: 4px solid #f3f3f3; border-top: 4px solid #2b579a;
+  border-radius: 50%; width: 36px; height: 36px; animation: ${spin} 1s linear infinite; margin-bottom: 10px;
+`;
+
 
 // --- 工具函數：計算兩點距離 (公尺) ---
 const getDistance = (p1, p2) => {
@@ -330,10 +340,10 @@ return (
             )}
           </MapContainer>
         ) : (
-          <LoadingContainer>
-            <Spinner />
+          <LoadingContainer2>
+            <Spinner2 />
             <div>正在定位...</div>
-          </LoadingContainer>
+          </LoadingContainer2>
         )}
       </div>
 

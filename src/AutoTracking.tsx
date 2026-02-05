@@ -4,6 +4,11 @@ import 'leaflet/dist/leaflet.css';
 import styled, { keyframes } from 'styled-components';
 import L from 'leaflet';
 
+interface Coords {
+  lat: number | null;
+  lng: number | null;
+}
+
 // --- 樣式組件 ---
 const AppContainer = styled.div`
   width: 100%;
@@ -42,9 +47,9 @@ const ControlBar = styled.div`
   background: #fff;
 `;
 
-const ToggleButton = styled.button`
-  background: ${props => props.active ? '#2b579a' : '#eee'};
-  color: ${props => props.active ? 'white' : '#333'};
+const ToggleButton = styled.button<{ $active: boolean }>`
+  background: ${props => props.$active ? '#2b579a' : '#eee'};
+  color: ${props => props.$active ? 'white' : '#333'};
   border: none;
   padding: 6px 12px;
   border-radius: 20px;
@@ -158,12 +163,12 @@ const redIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi
 const greenIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41] });
 
 function AutoTracking() {
-  const [userPos, setUserPos] = useState({ lat: null, lng: null });
-  const [devicePos, setDevicePos] = useState({ lat: null, lng: null });
+  const [userPos, setUserPos] = useState<Coords>({ lat: null, lng: null });
+  const [devicePos, setDevicePos] = useState<Coords>({ lat: null, lng: null });
   const [isLocked, setIsLocked] = useState(true);
   const [error, setError] = useState(null);
-  const [wsStatus, setWsStatus] = useState("中斷");
-  const [dvStatus, setDvStatus] = useState("待命");
+  const [wsStatus, setWsStatus] = useState<string | null>("中斷");
+  const [dvStatus, setDvStatus] = useState<string | null>("待命");
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
 

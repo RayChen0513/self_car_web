@@ -72,10 +72,11 @@ const Sidebar = styled.div<{ $isOpen: boolean }>`
   /* 手機版：底部抽屜樣式 */
   @media (max-width: 767px) {
     position: fixed;
-    bottom: 0;
+    // bottom: 0;
+    top: ${props => props.$isOpen ? '40vh' : '85vh'};
     left: 0;
     right: 0;
-    height: ${props => props.$isOpen ? '60vh' : '40px'};
+    height: ${props => props.$isOpen ? '60vh' : '60vh'};
     padding: 15px;
     width: calc(100% - 30px);
     border-radius: 20px 20px 0 0;

@@ -49,7 +49,25 @@ const InfoPanel = styled.div`
   grid-template-columns: 1fr 1fr;
   gap: 10px;
   border-bottom: 1px solid #eee;
-  img {width: calc(100vw - 30px)}
+  text-align: center;
+  img {
+      background-position: center;
+    height: 300px;}
+`;
+
+const InfoPanel2 = styled.div`
+  padding: 15px;
+  background: white;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  border-bottom: 1px solid #eee;
+  text-align: center;
+  display: flex;
+    justify-content: center;
+  img {
+      background-position: center;
+    height: 300px;}
 `;
 
 const StatCard = styled.div`
@@ -114,9 +132,9 @@ const Home = () => {
             </StatCard>
             </InfoPanel>
 
-            <InfoPanel>
-                <img src="/logo512.png" />
-            </InfoPanel>
+            <InfoPanel2>
+                <img src="/P_20260205_104459.png" />
+            </InfoPanel2>
 
             <InfoPanel>
             <StatButton $color="#257dd6" onClick={() => { window.location.href = "/tracking" }}>
